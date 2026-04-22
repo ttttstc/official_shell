@@ -73,21 +73,38 @@ jobs:
       - name: Build and package
         run: npm run build && npm run package
 
-      - name: Run integration tests (shell scenarios)
-        run: |
-          echo "=== Shell: bash ==="
-          node dist/index.js shell=bash run='echo "bash works"'
+      - name: Scenario bash
+        uses: ./
+        with:
+          shell: bash
+          script: echo "bash works"
 
-          echo "=== Shell: sh ==="
-          node dist/index.js shell=sh run='echo "sh works"'
+      - name: Scenario sh
+        uses: ./
+        with:
+          shell: sh
+          script: echo "sh works"
 
-          echo "=== Shell: pwsh ==="
-          node dist/index.js shell=pwsh run='Write-Host "pwsh works"'
+      - name: Scenario pwsh
+        uses: ./
+        with:
+          shell: pwsh
+          script: Write-Host "pwsh works"
 
-          echo "=== Shell: python ==="
-          node dist/index.js shell=python run='print("python works")'
+      - name: Scenario python
+        uses: ./
+        with:
+          shell: python
+          script: print("python works")
 
-          echo "=== Custom shell template ==="
-          node dist/index.js shell='bash -e {0}' run='echo "custom template works"'
+      - name: Scenario cmd
+        uses: ./
+        with:
+          shell: cmd
+          script: echo cmd works
 
-          echo "=== All scenarios passed ==="
+      - name: Scenario custom template
+        uses: ./
+        with:
+          shell: bash -e {0}
+          script: echo "custom template works"
