@@ -1,0 +1,24 @@
+name: 'Shell Executor'
+description: '平替 GitHub Actions run step 的全量 shell 执行插件'
+author: 'official_shell'
+
+inputs:
+  script:
+    description: '要执行的脚本内容（支持多行）'
+    required: true
+  shell:
+    description: |
+      Shell 类型。支持以下值：
+      - 内置关键字: bash, sh, pwsh, powershell, cmd, python
+      - 自定义模板: 任意命令 + {0} 占位符，如 perl {0}, ruby {0}
+      - 空值: 自动选择平台默认（非Windows: bash→sh, Windows: pwsh）
+    required: false
+    default: ''
+  working-directory:
+    description: '脚本执行的工作目录，空值时继承当前进程工作目录'
+    required: false
+    default: ''
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
