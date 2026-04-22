@@ -25712,13 +25712,20 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.execute = execute;
 const cp = __importStar(__nccwpck_require__(5317));
+const path = __importStar(__nccwpck_require__(6928));
 function execute(command, args, cwd) {
     return new Promise((resolve) => {
+        // Windows 上调用 cmd.exe 时必须用 verbatim 参数，否则 node 会把 args 中已有的
+        // 双引号转义为 \"，cmd 收到 `CALL \"path\"` 后会把整个 \"path\" 当成命令名查找，
+        // 报 'is not recognized as an internal or external command'。
+        const isCmd = process.platform === 'win32' &&
+            path.basename(command).toLowerCase() === 'cmd.exe';
         const child = cp.spawn(command, args, {
             cwd: cwd || process.cwd(),
             env: process.env,
             stdio: ['inherit', 'inherit', 'inherit'],
             shell: false,
+            windowsVerbatimArguments: isCmd,
         });
         child.on('close', (code) => {
             resolve({ exitCode: code ?? 1 });
@@ -25793,6 +25800,11 @@ async function run() {
         scriptPath = (0, script_file_1.createScriptFile)(script, config);
         core.debug(`Script file created: ${scriptPath}`);
         const resolved = (0, command_builder_1.buildCommand)(shell, scriptPath, config);
+        // 部分 runner 镜像（如 Ubuntu 24.04）只有 python3 没有 python，
+        // 在 spawn 前做一次解释器解析，优先 python、降级 python3。
+        if (resolved.command === 'python') {
+            resolved.command = await (0, platform_1.resolvePythonCommand)();
+        }
         core.debug(`Executing: ${resolved.command} ${resolved.args.join(' ')}`);
         const cwd = workingDir || undefined;
         const result = await (0, executor_1.execute)(resolved.command, resolved.args, cwd);
@@ -25821,6 +25833,7 @@ run();
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.resolveDefaultShell = resolveDefaultShell;
+exports.resolvePythonCommand = resolvePythonCommand;
 const io_1 = __nccwpck_require__(4994);
 /**
  * 解析未指定 shell 时的默认 shell key。
@@ -25852,6 +25865,28 @@ async function resolveDefaultShell() {
     }
     catch {
         return 'sh';
+    }
+}
+/**
+ * 解析实际可用的 python 解释器命令。
+ *
+ * 部分 runner 镜像（如 Ubuntu 24.04）默认不再提供 `python` 命令，
+ * 只有 `python3`。优先 `python`（兼容已有脚本），降级 `python3`。
+ * 都不存在时返回 `python`，让后续 spawn 抛出清晰的 ENOENT。
+ */
+async function resolvePythonCommand() {
+    try {
+        await (0, io_1.which)('python', true);
+        return 'python';
+    }
+    catch {
+        try {
+            await (0, io_1.which)('python3', true);
+            return 'python3';
+        }
+        catch {
+            return 'python';
+        }
     }
 }
 

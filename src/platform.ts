@@ -31,3 +31,24 @@ export async function resolveDefaultShell(): Promise<string> {
     return 'sh';
   }
 }
+
+/**
+ * 解析实际可用的 python 解释器命令。
+ *
+ * 部分 runner 镜像（如 Ubuntu 24.04）默认不再提供 `python` 命令，
+ * 只有 `python3`。优先 `python`（兼容已有脚本），降级 `python3`。
+ * 都不存在时返回 `python`，让后续 spawn 抛出清晰的 ENOENT。
+ */
+export async function resolvePythonCommand(): Promise<string> {
+  try {
+    await which('python', true);
+    return 'python';
+  } catch {
+    try {
+      await which('python3', true);
+      return 'python3';
+    } catch {
+      return 'python';
+    }
+  }
+}
