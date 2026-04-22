@@ -54,13 +54,13 @@ jobs:
       - name: TypeScript type check
         run: npx tsc --noEmit
 
-  test-scenarios:
-    name: Integration scenarios
+  # === Linux 场景 ===
+  test-scenarios-linux:
+    name: Scenarios (Linux)
     needs: unit-test
     runs-on: ubuntu-latest
 
     steps:
-      # === 6 种内置 shell ===
       - name: bash
         uses: ttttstc/official_shell@main
         with:
@@ -79,25 +79,12 @@ jobs:
           shell: pwsh
           script: Write-Host "pwsh works"
 
-      - name: powershell
-        uses: ttttstc/official_shell@main
-        with:
-          shell: powershell
-          script: Write-Host "powershell works"
-
-      - name: cmd
-        uses: ttttstc/official_shell@main
-        with:
-          shell: cmd
-          script: echo cmd works
-
       - name: python
         uses: ttttstc/official_shell@main
         with:
           shell: python
           script: print("python works")
 
-      # === 自定义模板 ===
       - name: custom template bash -e {0}
         uses: ttttstc/official_shell@main
         with:
@@ -116,7 +103,6 @@ jobs:
           shell: perl {0}
           script: print "perl works\n"
 
-      # === 多行脚本 ===
       - name: multiline bash
         uses: ttttstc/official_shell@main
         with:
@@ -135,7 +121,6 @@ jobs:
             Write-Host "line 2"
             Write-Host "line 3"
 
-      # === working-directory ===
       - name: working-directory
         uses: ttttstc/official_shell@main
         with:
@@ -143,27 +128,171 @@ jobs:
           working-directory: /tmp
           script: pwd && echo "running in /tmp"
 
-      # === 大小写不敏感 ===
       - name: shell case-insensitive BASH
         uses: ttttstc/official_shell@main
         with:
           shell: BASH
           script: echo "BASH uppercase works"
 
-      - name: shell case-insensitive Python
-        uses: ttttstc/official_shell@main
-        with:
-          shell: Python
-          script: print("Python uppercase works")
-
-      # === 退出码验证 ===
       - name: exit code 0
         uses: ttttstc/official_shell@main
         with:
           shell: bash
           script: exit 0
 
-      - name: exit code non-zero (expect failure)
+      - name: exit code non-zero
+        uses: ttttstc/official_shell@main
+        continue-on-error: true
+        with:
+          shell: bash
+          script: exit 1
+
+  # === Windows 场景 ===
+  test-scenarios-windows:
+    name: Scenarios (Windows)
+    needs: unit-test
+    runs-on: windows-latest
+
+    steps:
+      - name: powershell (Windows PowerShell)
+        uses: ttttstc/official_shell@main
+        with:
+          shell: powershell
+          script: Write-Host "powershell works"
+
+      - name: pwsh (PowerShell Core)
+        uses: ttttstc/official_shell@main
+        with:
+          shell: pwsh
+          script: Write-Host "pwsh works"
+
+      - name: cmd
+        uses: ttttstc/official_shell@main
+        with:
+          shell: cmd
+          script: echo cmd works
+
+      - name: python
+        uses: ttttstc/official_shell@main
+        with:
+          shell: python
+          script: print("python works")
+
+      - name: bash (Git Bash)
+        uses: ttttstc/official_shell@main
+        with:
+          shell: bash
+          script: echo "bash works"
+
+      - name: sh (MSYS2)
+        uses: ttttstc/official_shell@main
+        with:
+          shell: sh
+          script: echo "sh works"
+
+      - name: multiline powershell
+        uses: ttttstc/official_shell@main
+        with:
+          shell: powershell
+          script: |
+            Write-Host "line 1"
+            Write-Host "line 2"
+            Write-Host "line 3"
+
+      - name: multiline cmd
+        uses: ttttstc/official_shell@main
+        with:
+          shell: cmd
+          script: |
+            echo line 1
+            echo line 2
+            echo line 3
+
+      - name: working-directory
+        uses: ttttstc/official_shell@main
+        with:
+          shell: powershell
+          working-directory: "$env:TEMP"
+          script: pwd
+
+      - name: exit code 0
+        uses: ttttstc/official_shell@main
+        with:
+          shell: cmd
+          script: exit 0
+
+      - name: exit code non-zero
+        uses: ttttstc/official_shell@main
+        continue-on-error: true
+        with:
+          shell: cmd
+          script: exit 1
+
+  # === macOS 场景 ===
+  test-scenarios-macos:
+    name: Scenarios (macOS)
+    needs: unit-test
+    runs-on: macos-latest
+
+    steps:
+      - name: bash
+        uses: ttttstc/official_shell@main
+        with:
+          shell: bash
+          script: echo "bash works"
+
+      - name: sh
+        uses: ttttstc/official_shell@main
+        with:
+          shell: sh
+          script: echo "sh works"
+
+      - name: pwsh
+        uses: ttttstc/official_shell@main
+        with:
+          shell: pwsh
+          script: Write-Host "pwsh works"
+
+      - name: python
+        uses: ttttstc/official_shell@main
+        with:
+          shell: python
+          script: print("python works")
+
+      - name: zsh (default macOS shell)
+        uses: ttttstc/official_shell@main
+        with:
+          shell: zsh -e {0}
+          script: echo "zsh works"
+
+      - name: custom template bash -e {0}
+        uses: ttttstc/official_shell@main
+        with:
+          shell: bash -e {0}
+          script: echo "custom bash -e works"
+
+      - name: multiline bash
+        uses: ttttstc/official_shell@main
+        with:
+          shell: bash
+          script: |
+            echo "line 1"
+            echo "line 2"
+
+      - name: working-directory
+        uses: ttttstc/official_shell@main
+        with:
+          shell: bash
+          working-directory: /tmp
+          script: pwd && echo "running in /tmp"
+
+      - name: exit code 0
+        uses: ttttstc/official_shell@main
+        with:
+          shell: bash
+          script: exit 0
+
+      - name: exit code non-zero
         uses: ttttstc/official_shell@main
         continue-on-error: true
         with:
