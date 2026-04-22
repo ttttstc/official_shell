@@ -25822,13 +25822,33 @@ run();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.resolveDefaultShell = resolveDefaultShell;
 const io_1 = __nccwpck_require__(4994);
+/**
+ * 解析未指定 shell 时的默认 shell key。
+ *
+ * 对齐 GitHub Actions workflow syntax 的 "unspecified" 行为：
+ *
+ * - 非 Windows：使用 `bash -e {0}`（不等价于显式 `shell: bash`，
+ *   后者会带 `--noprofile --norc -eo pipefail`）。
+ *   因此返回内部 key `default-bash`。
+ *   若 PATH 中无 `bash`，降级到 `sh`（同样是 `sh -e {0}`，
+ *   此时与显式 `shell: sh` 行为等价）。
+ *
+ * - Windows：优先 `pwsh`（PowerShell Core），
+ *   若 self-hosted runner 未安装则降级 `powershell`（PowerShell Desktop）。
+ */
 async function resolveDefaultShell() {
     if (process.platform === 'win32') {
-        return 'pwsh';
+        try {
+            await (0, io_1.which)('pwsh', true);
+            return 'pwsh';
+        }
+        catch {
+            return 'powershell';
+        }
     }
     try {
         await (0, io_1.which)('bash', true);
-        return 'bash';
+        return 'default-bash';
     }
     catch {
         return 'sh';
@@ -25961,6 +25981,16 @@ exports.BUILTIN_SHELLS = {
         command: 'python',
         args: ['{0}'],
         extension: '.py',
+        prepend: '',
+        append: '',
+    },
+    // 内部专用：非 Windows 平台未指定 shell 时的默认模板。
+    // 对齐 GitHub workflow syntax "unspecified" 行：`bash -e {0}`，
+    // 与显式 `shell: bash`（`bash --noprofile --norc -eo pipefail {0}`）为两种不同模板。
+    'default-bash': {
+        command: 'bash',
+        args: ['-e', '{0}'],
+        extension: '.sh',
         prepend: '',
         append: '',
     },

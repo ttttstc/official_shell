@@ -67,4 +67,10 @@ describe('command-builder', () => {
     expect(r.command).toBe('node');
     expect(r.args).toEqual(['--experimental-vm-modules', scriptPath]);
   });
+
+  it('default-bash 走内置分支，输出 bash -e {scriptPath}', () => {
+    const r = buildCommand('default-bash', scriptPath, BUILTIN_SHELLS['default-bash']);
+    expect(r.command).toBe('bash');
+    expect(r.args).toEqual(['-e', scriptPath]);
+  });
 });
