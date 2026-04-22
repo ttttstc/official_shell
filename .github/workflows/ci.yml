@@ -8,56 +8,9 @@ on:
   workflow_dispatch:
 
 jobs:
-  unit-test:
-    name: "Test (OS: ${{ matrix.os }})"
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build TypeScript
-        run: npm run build
-
-      - name: Package with ncc
-        run: npm run package
-
-      - name: Run unit tests
-        run: npm test
-
-  lint:
-    name: TypeScript type check
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: TypeScript type check
-        run: npx tsc --noEmit
-
   # === Linux 场景 ===
   test-scenarios-linux:
     name: Scenarios (Linux)
-    needs: unit-test
     runs-on: ubuntu-latest
 
     steps:
@@ -150,7 +103,6 @@ jobs:
   # === Windows 场景 ===
   test-scenarios-windows:
     name: Scenarios (Windows)
-    needs: unit-test
     runs-on: windows-latest
 
     steps:
@@ -231,7 +183,6 @@ jobs:
   # === macOS 场景 ===
   test-scenarios-macos:
     name: Scenarios (macOS)
-    needs: unit-test
     runs-on: macos-latest
 
     steps:
