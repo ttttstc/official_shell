@@ -25712,9 +25712,17 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.execute = execute;
 const cp = __importStar(__nccwpck_require__(5317));
+const fs = __importStar(__nccwpck_require__(9896));
 const path = __importStar(__nccwpck_require__(6928));
 function execute(command, args, cwd) {
     return new Promise((resolve) => {
+        // cwd 不存在时 node 抛 'spawn <cmd> ENOENT'，错误信息里不包含 cwd 路径，
+        // 用户会误以为是可执行文件找不到。这里提前校验给出明确错误。
+        if (cwd && !fs.existsSync(cwd)) {
+            console.error(`Working directory does not exist: ${cwd}`);
+            resolve({ exitCode: 1 });
+            return;
+        }
         // Windows 上调用 cmd.exe 时必须用 verbatim 参数，否则 node 会把 args 中已有的
         // 双引号转义为 \"，cmd 收到 `CALL \"path\"` 后会把整个 \"path\" 当成命令名查找，
         // 报 'is not recognized as an internal or external command'。

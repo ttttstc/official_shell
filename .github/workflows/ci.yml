@@ -212,7 +212,7 @@ jobs:
         uses: ttttstc/official_shell@main
         with:
           shell: powershell
-          working-directory: "$env:TEMP"
+          working-directory: ${{ runner.temp }}
           script: pwd
 
       - name: exit code 0
