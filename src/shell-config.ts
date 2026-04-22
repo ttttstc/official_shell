@@ -52,6 +52,16 @@ export const BUILTIN_SHELLS: Record<string, ShellConfig> = {
     prepend: '',
     append: '',
   },
+  // 内部专用：非 Windows 平台未指定 shell 时的默认模板。
+  // 对齐 GitHub workflow syntax "unspecified" 行：`bash -e {0}`，
+  // 与显式 `shell: bash`（`bash --noprofile --norc -eo pipefail {0}`）为两种不同模板。
+  'default-bash': {
+    command: 'bash',
+    args: ['-e', '{0}'],
+    extension: '.sh',
+    prepend: '',
+    append: '',
+  },
 };
 
 export function isBuiltinShell(shell: string): boolean {

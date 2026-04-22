@@ -2,9 +2,24 @@ import { BUILTIN_SHELLS, isBuiltinShell, resolveShellConfig } from '../src/shell
 
 describe('shell-config', () => {
   describe('BUILTIN_SHELLS', () => {
-    it('包含 6 种内置 shell', () => {
+    it('包含 6 种用户可见内置 shell + 1 个内部 default-bash', () => {
       expect(Object.keys(BUILTIN_SHELLS).sort()).toEqual(
-        ['bash', 'cmd', 'powershell', 'pwsh', 'python', 'sh'].sort()
+        ['bash', 'cmd', 'default-bash', 'powershell', 'pwsh', 'python', 'sh'].sort()
+      );
+    });
+
+    it('default-bash 模板对齐 GitHub workflow syntax "unspecified" 行', () => {
+      const c = BUILTIN_SHELLS['default-bash'];
+      expect(c.command).toBe('bash');
+      expect(c.args).toEqual(['-e', '{0}']);
+      expect(c.extension).toBe('.sh');
+      expect(c.prepend).toBe('');
+      expect(c.append).toBe('');
+    });
+
+    it('default-bash 与显式 bash 为两种不同模板', () => {
+      expect(BUILTIN_SHELLS['default-bash'].args).not.toEqual(
+        BUILTIN_SHELLS.bash.args
       );
     });
 
