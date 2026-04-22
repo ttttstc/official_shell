@@ -60,51 +60,38 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build and package
-        run: npm run build && npm run package
-
       - name: Scenario bash
-        uses: ./
+        uses: ttttstc/official_shell@main
         with:
           shell: bash
           script: echo "bash works"
 
       - name: Scenario sh
-        uses: ./
+        uses: ttttstc/official_shell@main
         with:
           shell: sh
           script: echo "sh works"
 
       - name: Scenario pwsh
-        uses: ./
+        uses: ttttstc/official_shell@main
         with:
           shell: pwsh
           script: Write-Host "pwsh works"
 
       - name: Scenario python
-        uses: ./
+        uses: ttttstc/official_shell@main
         with:
           shell: python
           script: print("python works")
 
       - name: Scenario cmd
-        uses: ./
+        uses: ttttstc/official_shell@main
         with:
           shell: cmd
           script: echo cmd works
 
       - name: Scenario custom template
-        uses: ./
+        uses: ttttstc/official_shell@main
         with:
           shell: bash -e {0}
           script: echo "custom template works"
