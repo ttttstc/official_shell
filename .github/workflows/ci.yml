@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Test (OS: ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Package with ncc
+        run: npm run package
+
+      - name: Run unit tests
+        run: npm test
+
+  lint:
+    name: TypeScript type check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript type check
+        run: npx tsc --noEmit
+
+  test-scenarios:
+    name: Integration scenarios
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build and package
+        run: npm run build && npm run package
+
+      - name: Run integration tests (shell scenarios)
+        run: |
+          echo "=== Shell: bash ==="
+          node dist/index.js shell=bash run='echo "bash works"'
+
+          echo "=== Shell: sh ==="
+          node dist/index.js shell=sh run='echo "sh works"'
+
+          echo "=== Shell: pwsh ==="
+          node dist/index.js shell=pwsh run='Write-Host "pwsh works"'
+
+          echo "=== Shell: python ==="
+          node dist/index.js shell=python run='print("python works")'
+
+          echo "=== Custom shell template ==="
+          node dist/index.js shell='bash -e {0}' run='echo "custom template works"'
+
+          echo "=== All scenarios passed ==="
