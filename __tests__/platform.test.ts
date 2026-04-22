@@ -1,4 +1,4 @@
-import { resolveDefaultShell } from '../src/platform';
+import { resolveDefaultShell, resolvePythonCommand } from '../src/platform';
 
 jest.mock('@actions/io', () => ({
   which: jest.fn(),
@@ -46,5 +46,28 @@ describe('platform.resolveDefaultShell', () => {
     setPlatform('darwin');
     (which as jest.Mock).mockResolvedValue('/bin/bash');
     await expect(resolveDefaultShell()).resolves.toBe('default-bash');
+  });
+});
+
+describe('platform.resolvePythonCommand', () => {
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('python 存在时返回 python', async () => {
+    (which as jest.Mock).mockResolvedValue('/usr/bin/python');
+    await expect(resolvePythonCommand()).resolves.toBe('python');
+  });
+
+  it('python 不存在但 python3 存在时降级 python3', async () => {
+    (which as jest.Mock)
+      .mockRejectedValueOnce(new Error('not found'))
+      .mockResolvedValueOnce('/usr/bin/python3');
+    await expect(resolvePythonCommand()).resolves.toBe('python3');
+  });
+
+  it('python 与 python3 都不存在时返回 python（让 spawn 报清晰错误）', async () => {
+    (which as jest.Mock).mockRejectedValue(new Error('not found'));
+    await expect(resolvePythonCommand()).resolves.toBe('python');
   });
 });

@@ -44,11 +44,11 @@ jobs:
           shell: bash -e {0}
           script: echo "custom bash -e works"
 
-      - name: custom template node -e {0}
+      - name: custom template node {0}
         uses: ttttstc/official_shell@main
         with:
-          shell: node -e {0}
-          script: console.log("node -e works")
+          shell: node {0}
+          script: console.log("node works")
 
       - name: custom template perl {0}
         uses: ttttstc/official_shell@main
@@ -99,6 +99,54 @@ jobs:
         with:
           shell: bash
           script: exit 1
+
+      # --- 与官方 run step 对齐能力 ---
+
+      - name: GITHUB_ENV 写入
+        uses: ttttstc/official_shell@main
+        with:
+          shell: bash
+          script: |
+            echo "MY_ENV_VAR=hello-from-step" >> "$GITHUB_ENV"
+            echo "MY_MULTILINE<<EOF" >> "$GITHUB_ENV"
+            echo "line 1" >> "$GITHUB_ENV"
+            echo "line 2" >> "$GITHUB_ENV"
+            echo "EOF" >> "$GITHUB_ENV"
+
+      - name: GITHUB_ENV 读取（下游 step）
+        uses: ttttstc/official_shell@main
+        with:
+          shell: bash
+          script: |
+            test "$MY_ENV_VAR" = "hello-from-step" || { echo "MY_ENV_VAR mismatch: $MY_ENV_VAR"; exit 1; }
+            test "$MY_MULTILINE" = $'line 1\nline 2' || { echo "MY_MULTILINE mismatch: $MY_MULTILINE"; exit 1; }
+            echo "GITHUB_ENV propagation works"
+
+      - name: GITHUB_OUTPUT 写入
+        id: outputs-linux
+        uses: ttttstc/official_shell@main
+        with:
+          shell: bash
+          script: |
+            echo "result=ok" >> "$GITHUB_OUTPUT"
+
+      - name: GITHUB_OUTPUT 读取
+        uses: ttttstc/official_shell@main
+        with:
+          shell: bash
+          script: |
+            test "${{ steps.outputs-linux.outputs.result }}" = "ok" || { echo "output mismatch"; exit 1; }
+            echo "GITHUB_OUTPUT propagation works"
+
+      - name: step env 注入
+        uses: ttttstc/official_shell@main
+        env:
+          STEP_LEVEL_ENV: from-step-env
+        with:
+          shell: bash
+          script: |
+            test "$STEP_LEVEL_ENV" = "from-step-env" || { echo "STEP_LEVEL_ENV mismatch: $STEP_LEVEL_ENV"; exit 1; }
+            echo "step env injection works"
 
   # === Windows 场景 ===
   test-scenarios-windows:
@@ -180,6 +228,49 @@ jobs:
           shell: cmd
           script: exit 1
 
+      # --- 与官方 run step 对齐能力 ---
+
+      - name: GITHUB_ENV 写入 (powershell)
+        uses: ttttstc/official_shell@main
+        with:
+          shell: powershell
+          script: |
+            "MY_ENV_VAR=hello-from-step" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: GITHUB_ENV 读取 (powershell)
+        uses: ttttstc/official_shell@main
+        with:
+          shell: powershell
+          script: |
+            if ($env:MY_ENV_VAR -ne "hello-from-step") { Write-Host "MY_ENV_VAR mismatch: $env:MY_ENV_VAR"; exit 1 }
+            Write-Host "GITHUB_ENV propagation works"
+
+      - name: GITHUB_OUTPUT 写入 (cmd)
+        id: outputs-windows
+        uses: ttttstc/official_shell@main
+        with:
+          shell: cmd
+          script: |
+            echo result=ok>>%GITHUB_OUTPUT%
+
+      - name: GITHUB_OUTPUT 读取
+        uses: ttttstc/official_shell@main
+        with:
+          shell: powershell
+          script: |
+            if ("${{ steps.outputs-windows.outputs.result }}" -ne "ok") { Write-Host "output mismatch"; exit 1 }
+            Write-Host "GITHUB_OUTPUT propagation works"
+
+      - name: step env 注入
+        uses: ttttstc/official_shell@main
+        env:
+          STEP_LEVEL_ENV: from-step-env
+        with:
+          shell: powershell
+          script: |
+            if ($env:STEP_LEVEL_ENV -ne "from-step-env") { Write-Host "STEP_LEVEL_ENV mismatch: $env:STEP_LEVEL_ENV"; exit 1 }
+            Write-Host "step env injection works"
+
   # === macOS 场景 ===
   test-scenarios-macos:
     name: Scenarios (macOS)
@@ -249,3 +340,46 @@ jobs:
         with:
           shell: bash
           script: exit 1
+
+      # --- 与官方 run step 对齐能力 ---
+
+      - name: GITHUB_ENV 写入
+        uses: ttttstc/official_shell@main
+        with:
+          shell: bash
+          script: |
+            echo "MY_ENV_VAR=hello-from-step" >> "$GITHUB_ENV"
+
+      - name: GITHUB_ENV 读取
+        uses: ttttstc/official_shell@main
+        with:
+          shell: bash
+          script: |
+            test "$MY_ENV_VAR" = "hello-from-step" || { echo "MY_ENV_VAR mismatch: $MY_ENV_VAR"; exit 1; }
+            echo "GITHUB_ENV propagation works"
+
+      - name: GITHUB_OUTPUT 写入
+        id: outputs-macos
+        uses: ttttstc/official_shell@main
+        with:
+          shell: bash
+          script: |
+            echo "result=ok" >> "$GITHUB_OUTPUT"
+
+      - name: GITHUB_OUTPUT 读取
+        uses: ttttstc/official_shell@main
+        with:
+          shell: bash
+          script: |
+            test "${{ steps.outputs-macos.outputs.result }}" = "ok" || { echo "output mismatch"; exit 1; }
+            echo "GITHUB_OUTPUT propagation works"
+
+      - name: step env 注入
+        uses: ttttstc/official_shell@main
+        env:
+          STEP_LEVEL_ENV: from-step-env
+        with:
+          shell: bash
+          script: |
+            test "$STEP_LEVEL_ENV" = "from-step-env" || { echo "STEP_LEVEL_ENV mismatch: $STEP_LEVEL_ENV"; exit 1; }
+            echo "step env injection works"

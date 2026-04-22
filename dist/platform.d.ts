@@ -13,3 +13,11 @@
  *   若 self-hosted runner 未安装则降级 `powershell`（PowerShell Desktop）。
  */
 export declare function resolveDefaultShell(): Promise<string>;
+/**
+ * 解析实际可用的 python 解释器命令。
+ *
+ * 部分 runner 镜像（如 Ubuntu 24.04）默认不再提供 `python` 命令，
+ * 只有 `python3`。优先 `python`（兼容已有脚本），降级 `python3`。
+ * 都不存在时返回 `python`，让后续 spawn 抛出清晰的 ENOENT。
+ */
+export declare function resolvePythonCommand(): Promise<string>;
