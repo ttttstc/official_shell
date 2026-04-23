@@ -405,33 +405,51 @@ jobs:
             test "$STEP_LEVEL_ENV" = "from-step-env" || { echo "STEP_LEVEL_ENV mismatch: $STEP_LEVEL_ENV"; exit 1; }
             echo "step env injection works"
 
-  # === continue-on-error: false 场景 ===
-  # job 内部一个会失败的 step，不带 continue-on-error。预期 job result=failure。
-  # 整个 job 用 job-level continue-on-error: true 让 CI 整体不被阻断；
-  # 由下面的 verify-strict-failed 守门 job 反向断言"它真的失败了"。
+  # === continue-on-error: false 场景（直接验证插件进程 exit code）===
+  # 不依赖 GitHub Actions 的 step/job 状态聚合（continue-on-error/needs.result
+  # 行为复杂且不同层级语义不同）。直接以 node 调用 dist/index.js 入口，
+  # 通过插件进程退出码验证"非零退出码会传递出去"，
+  # 即等价于"continue-on-error: false 时 step 会失败"的契约。
   test-strict-exit-nonzero:
-    name: Strict exit-nonzero (expected to fail)
+    name: Strict exit-nonzero (process exit code check)
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
-      - name: exit 1 (no continue-on-error at step level)
-        uses: ttttstc/official_shell@main
-        with:
-          shell: bash
-          script: exit 1
+      - uses: actions/checkout@v4
 
-  verify-strict-failed:
-    name: Verify strict job actually failed
-    needs: test-strict-exit-nonzero
-    runs-on: ubuntu-latest
-    if: always()
-    steps:
-      - name: assert needed job result == failure
+      - name: install & build
         run: |
-          actual="${{ needs.test-strict-exit-nonzero.result }}"
-          if [ "$actual" != "failure" ]; then
-            echo "expected test-strict-exit-nonzero to fail (continue-on-error:false at step level + exit 1) but got: $actual"
-            echo "插件未在非零退出码时让 step/job 失败 — 退出码契约破裂"
+          npm ci
+          npm run build
+          npm run package
+
+      - name: assert plugin exits non-zero when script fails (no continue-on-error)
+        env:
+          INPUT_SHELL: bash
+          INPUT_SCRIPT: exit 1
+          RUNNER_TEMP: ${{ runner.temp }}
+        run: |
+          set +e
+          node ./dist/index.js
+          actual_exit=$?
+          set -e
+          if [ "$actual_exit" -eq 0 ]; then
+            echo "插件以 exit 0 完成了一个 exit 1 脚本 — 退出码契约破裂"
             exit 1
           fi
-          echo "OK: strict exit-1 job correctly resulted in failure"
+          echo "OK: plugin exited non-zero ($actual_exit) for failing script — strict mode contract holds"
+
+      - name: assert plugin exits zero when script succeeds
+        env:
+          INPUT_SHELL: bash
+          INPUT_SCRIPT: exit 0
+          RUNNER_TEMP: ${{ runner.temp }}
+        run: |
+          set +e
+          node ./dist/index.js
+          actual_exit=$?
+          set -e
+          if [ "$actual_exit" -ne 0 ]; then
+            echo "插件以 exit $actual_exit 完成了一个 exit 0 脚本 — 退出码契约破裂"
+            exit 1
+          fi
+          echo "OK: plugin exited zero for succeeding script"
