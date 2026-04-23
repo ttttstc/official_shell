@@ -93,12 +93,19 @@ jobs:
           shell: bash
           script: exit 0
 
-      - name: exit code non-zero
+      - name: exit code non-zero (continue-on-error)
+        id: exit-nonzero-linux
         uses: ttttstc/official_shell@main
         continue-on-error: true
         with:
           shell: bash
           script: exit 1
+
+      - name: assert exit-nonzero outcome=failure
+        shell: bash
+        run: |
+          test "${{ steps.exit-nonzero-linux.outcome }}" = "failure" \
+            || { echo "插件未把非零退出码传递为 step failure，实际 outcome=${{ steps.exit-nonzero-linux.outcome }}"; exit 1; }
 
       # --- 与官方 run step 对齐能力 ---
 
@@ -221,12 +228,19 @@ jobs:
           shell: cmd
           script: exit 0
 
-      - name: exit code non-zero
+      - name: exit code non-zero (continue-on-error)
+        id: exit-nonzero-windows
         uses: ttttstc/official_shell@main
         continue-on-error: true
         with:
           shell: cmd
           script: exit 1
+
+      - name: assert exit-nonzero outcome=failure
+        shell: bash
+        run: |
+          test "${{ steps.exit-nonzero-windows.outcome }}" = "failure" \
+            || { echo "插件未把非零退出码传递为 step failure，实际 outcome=${{ steps.exit-nonzero-windows.outcome }}"; exit 1; }
 
       # --- 与官方 run step 对齐能力 ---
 
@@ -334,12 +348,19 @@ jobs:
           shell: bash
           script: exit 0
 
-      - name: exit code non-zero
+      - name: exit code non-zero (continue-on-error)
+        id: exit-nonzero-macos
         uses: ttttstc/official_shell@main
         continue-on-error: true
         with:
           shell: bash
           script: exit 1
+
+      - name: assert exit-nonzero outcome=failure
+        shell: bash
+        run: |
+          test "${{ steps.exit-nonzero-macos.outcome }}" = "failure" \
+            || { echo "插件未把非零退出码传递为 step failure，实际 outcome=${{ steps.exit-nonzero-macos.outcome }}"; exit 1; }
 
       # --- 与官方 run step 对齐能力 ---
 
@@ -383,3 +404,34 @@ jobs:
           script: |
             test "$STEP_LEVEL_ENV" = "from-step-env" || { echo "STEP_LEVEL_ENV mismatch: $STEP_LEVEL_ENV"; exit 1; }
             echo "step env injection works"
+
+  # === continue-on-error: false 场景 ===
+  # job 内部一个会失败的 step，不带 continue-on-error。预期 job result=failure。
+  # 整个 job 用 job-level continue-on-error: true 让 CI 整体不被阻断；
+  # 由下面的 verify-strict-failed 守门 job 反向断言"它真的失败了"。
+  test-strict-exit-nonzero:
+    name: Strict exit-nonzero (expected to fail)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: exit 1 (no continue-on-error at step level)
+        uses: ttttstc/official_shell@main
+        with:
+          shell: bash
+          script: exit 1
+
+  verify-strict-failed:
+    name: Verify strict job actually failed
+    needs: test-strict-exit-nonzero
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: assert needed job result == failure
+        run: |
+          actual="${{ needs.test-strict-exit-nonzero.result }}"
+          if [ "$actual" != "failure" ]; then
+            echo "expected test-strict-exit-nonzero to fail (continue-on-error:false at step level + exit 1) but got: $actual"
+            echo "插件未在非零退出码时让 step/job 失败 — 退出码契约破裂"
+            exit 1
+          fi
+          echo "OK: strict exit-1 job correctly resulted in failure"
